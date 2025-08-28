@@ -1,0 +1,7 @@
+{
+  "hosting": {
+    "public": "dist/influmedia-dashboard-temporal/browser",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [{ "source": "**", "destination": "/index.html" }]
+  }
+}

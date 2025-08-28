@@ -1,0 +1,10 @@
+.wrap { padding: 16px; }
+.toolbar { display: flex; gap: 12px; align-items: center; margin: 12px 0; }
+.pager { display: flex; gap: 8px; margin: 12px 0; }
+.panel { margin-top: 16px; padding: 16px; border: 1px solid #eee; border-radius: 8px; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 12px;
+}
+.actions { margin-top: 12px; display: flex; gap: 8px; }
