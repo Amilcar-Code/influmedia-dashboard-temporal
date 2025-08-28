@@ -1,0 +1,19 @@
+<div class="min-h-screen grid place-items-center bg-gray-50">
+  <form class="w-full max-w-sm bg-white p-6 rounded-xl shadow"
+        [formGroup]="form" (ngSubmit)="submit()">
+    <h1 class="text-xl font-semibold mb-4">Iniciar sesión</h1>
+
+    <label class="text-sm">Email</label>
+    <input class="w-full border rounded p-2 mb-3"
+           type="email" formControlName="email" placeholder="example@gmail.com"/>
+
+    <label class="text-sm">Contraseña</label>
+    <input class="w-full border rounded p-2 mb-4"
+           type="password" formControlName="password" placeholder="••••••••"/>
+
+    <button class="w-full bg-blue-600 text-white rounded p-2 disabled:opacity-50"
+            [disabled]="loading || form.invalid">Entrar</button>
+
+    <p *ngIf="error" class="text-red-600 text-sm mt-3">{{ error }}</p>
+  </form>
+</div>

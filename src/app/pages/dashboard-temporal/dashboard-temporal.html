@@ -11,21 +11,23 @@
       <input class="border rounded-md px-3 py-2 w-72"
              [placeholder]="searchMode === 'email' ? 'correo' : 'nombre'"
              (keyup)="onSearch($any($event.target).value)">
-    </div>
-
-    <div>
-      <label class="block text-sm text-gray-600 mb-1">Por</label>
-      <select class="border rounded-md px-3 py-2"
+             
+            </div>
+            
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Por</label>
+              <select class="border rounded-md px-3 py-2"
               (change)="searchMode = $any($event.target).value">
-        <option value="name" selected>Nombre</option>
-        <option value="email">Correo</option>
-      </select>
-    </div>
-
+              <option value="name" selected>Nombre</option>
+              <option value="email">Correo</option>
+            </select>
+          </div>
+          
     <button class="px-4 py-2 rounded-md bg-blue-600 text-white" (click)="new()">Nuevo</button>
     <button class="px-4 py-2 rounded-md border" (click)="reload()">Recargar</button>
+      <button class="px-3 py-2 rounded bg-gray-200" (click)="logout()">Cerrar sesión</button>
   </div>
-
+  
   <!-- Tabla con scroll -->
   <div class="bg-white border rounded-lg overflow-x-auto overflow-y-auto" style="max-height: 420px;">
     <table class="min-w-full text-sm">
@@ -158,5 +160,6 @@
         <button class="px-4 py-2 rounded-md bg-blue-600 text-white" [disabled]="form.invalid">Guardar</button>
       </div>
     </form>
+  
   </section>
 </div>

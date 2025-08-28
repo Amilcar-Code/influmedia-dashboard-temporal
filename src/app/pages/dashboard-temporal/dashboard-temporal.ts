@@ -14,8 +14,12 @@ import { Auth } from '@angular/fire/auth';
 import { authState } from '@angular/fire/auth';
 import { firstValueFrom, filter } from 'rxjs';
 
+
 import Swal from 'sweetalert2';
 
+
+import { AuthService } from '../../services/auth.service';
+import { Router } from '@angular/router';
 @Component({
   selector: 'app-dashboard-temporal',
   standalone: true,
@@ -27,6 +31,14 @@ import Swal from 'sweetalert2';
   styleUrls: ['./dashboard-temporal.scss']
 })
 export class DashboardTemporal implements OnInit {
+
+  private authSvc = inject(AuthService);
+private router = inject(Router);
+
+async logout() {
+  await this.authSvc.signOut();
+  this.router.navigateByUrl('/login');
+}
 
   private fb   = inject(FormBuilder);
   private svc  = inject(InfluencersService);
@@ -209,4 +221,7 @@ export class DashboardTemporal implements OnInit {
       this.showError('Eliminar', err);
     }
   }
+
+
+  
 }
