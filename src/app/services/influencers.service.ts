@@ -43,28 +43,23 @@ export class InfluencersService {
   const raw   = term.trim();
   const lower = raw.toLowerCase();
 
-  // 1) search_name (minúsculas + sin tildes)  ✅
+  // 0) keywords (tokens precalculados)
   try {
-    const q0 = query(
-      this.col,
-      orderBy('search_name'),
-      startAt(lower),
-      endAt(lower + '\uf8ff'),
-      qlimit(pageSize)
-    );
+    const qk = query(this.col, where('keywords', 'array-contains', lower), qlimit(pageSize));
+    const sk = await getDocs(qk);
+    if (!sk.empty) return sk.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+  } catch {}
+
+  // 1) search_name (minúsculas + sin tildes)
+  try {
+    const q0 = query(this.col, orderBy('search_name'), startAt(lower), endAt(lower + '\uf8ff'), qlimit(pageSize));
     const s0 = await getDocs(q0);
     if (!s0.empty) return s0.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
-  } catch { /* si aún no hay índice/campo, cae al siguiente */ }
+  } catch {}
 
-  // 2) nameLower (minúsculas)  ✅
+  // 2) nameLower (minúsculas)
   try {
-    const q1 = query(
-      this.col,
-      orderBy('nameLower'),
-      startAt(lower),
-      endAt(lower + '\uf8ff'),
-      qlimit(pageSize)
-    );
+    const q1 = query(this.col, orderBy('nameLower'), startAt(lower), endAt(lower + '\uf8ff'), qlimit(pageSize));
     const s1 = await getDocs(q1);
     if (!s1.empty) return s1.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
   } catch {}
@@ -75,6 +70,7 @@ export class InfluencersService {
   const s2 = await getDocs(q2);
   return s2.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
 }
+
 
 async searchByEmail(term: string, pageSize = 200) {
   const lower = term.trim().toLowerCase();
