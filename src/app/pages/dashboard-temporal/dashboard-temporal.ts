@@ -112,11 +112,24 @@ async logout() {
     };
   }
 
-  private showError(title: string, err: unknown) {
-    console.error(title, err);
-    const msg = (err as any)?.message ?? String(err);
-    Swal.fire({ icon: 'error', title, text: msg });
+  private showError(title: string, err: any) {
+  console.error(title, err);
+  let msg = err?.message || String(err);
+
+  // Caso típico: "Unsupported field value: undefined (found in field handleLower …)"
+  const m = /found in field ([\w.]+)/i.exec(msg);
+  if (m) {
+    const field = m[1];
+    msg = `El campo “${field}” viene vacío o con un valor no válido. Por favor revisa el formulario.`;
+  } else if (err?.code === 'permission-denied') {
+    msg = 'No tienes permisos para esta acción.';
+  } else if (err?.code === 'unavailable') {
+    msg = 'Servicio temporalmente no disponible. Intenta de nuevo en unos segundos.';
   }
+
+  Swal.fire({ icon: 'error', title, text: msg });
+}
+
   private showOK(title: string, text = '') {
     Swal.fire({ icon: 'success', title, text, timer: 1200, showConfirmButton: false });
   }

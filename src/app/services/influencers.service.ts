@@ -7,7 +7,9 @@ import {
   serverTimestamp
 } from '@angular/fire/firestore';
 import { Influencer } from '../models/influencer.model';
-import { normalizeText, normalizeForWrite } from '../utils/normalize';
+// src/app/services/influencers.service.ts
+import { normalizeForWrite, cleanUndefined } from './../utils/normalize';
+
 
 @Injectable({ providedIn: 'root' })
 export class InfluencersService {
@@ -39,7 +41,7 @@ export class InfluencersService {
   // -------------------------------------------
   async searchByName(term: string, pageSize = 200) {
     const raw = term.trim();
-    const sn  = normalizeText(raw);
+    const sn  = normalizeForWrite(raw);
     const out: any[] = [];
     const seen = new Set<string>();
 
@@ -131,40 +133,40 @@ export class InfluencersService {
 
   // Crear: normaliza TODO antes de subir
   async create(data: Influencer) {
-    const { id, ...rest } = data as any; // no subas "id"
-    const payload: any = normalizeForWrite(rest);
-    payload.email = (payload.email ?? '').toLowerCase();
-    payload.emailLower = payload.email;
-    payload.createdAt = serverTimestamp();
-    payload.updatedAt = serverTimestamp();
+  const { id, ...rest } = data as any; // no subas "id"
+  const norm = normalizeForWrite(rest);
+  const payload: any = {
+    ...rest,
+    ...norm,
+    email: (rest.email ?? '').toLowerCase(),
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+  const ref = await addDoc(this.col, cleanUndefined(payload));
+  return ref.id;
+}
 
-    // addDoc crea ID automático
-    const ref = await addDoc(this.col, payload);
-    return ref.id;
+async update(id: string, data: Partial<Influencer>) {
+  const { id: _omit, ...rest } = data as any;
+  const norm = normalizeForWrite(rest);
+
+  // Si viene email, reflejar emailLower
+  if ('email' in rest) {
+    norm.email = (rest.email ?? '').toLowerCase();
+    norm.emailLower = norm.email;
   }
 
-  // Actualizar: normaliza SOLO lo que venga en el patch
-  async update(id: string, data: Partial<Influencer>) {
-    const { id: _omit, ...patchIn } = data as any;
+  const patch: any = {
+    ...rest,
+    ...norm,
+    updatedAt: serverTimestamp(),
+  };
 
-    // Pasamos el patch por normalizeForWrite para generar campos derivados,
-    // y luego sobrescribimos updatedAt con serverTimestamp().
-    const norm = normalizeForWrite(patchIn) as any;
+  // set + merge (mejor que update cuando quitamos undefined)
+  const ref = doc(this.fs, 'influencers', id);
+  await setDoc(ref, cleanUndefined(patch), { merge: true });
+}
 
-    if ('email' in patchIn) {
-      norm.email = (patchIn.email ?? '').toLowerCase();
-      norm.emailLower = norm.email;
-    }
-    if (!('updatedAt' in norm)) {
-      norm.updatedAt = serverTimestamp();
-    } else {
-      norm.updatedAt = serverTimestamp();
-    }
-
-    const ref = doc(this.fs, 'influencers', id);
-    // setDoc(merge:true) aplica solo los campos del patch
-    await setDoc(ref, norm, { merge: true });
-  }
 
   async remove(id: string) {
     await deleteDoc(doc(this.fs, 'influencers', id));
