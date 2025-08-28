@@ -40,80 +40,63 @@ export class InfluencersService {
   // 3) fallback legacy: prefijo por name
   // -------------------------------------------
   async searchByName(term: string, pageSize = 200) {
-    const raw = term.trim();
-    const sn  = normalizeForWrite(raw);
-    const out: any[] = [];
-    const seen = new Set<string>();
+  const raw   = term.trim();
+  const lower = raw.toLowerCase();
 
-    // 0) search_name == normalizado
-    try {
-      const s0 = await getDocs(query(this.col, where('search_name', '==', sn), qlimit(pageSize)));
-      s0.forEach(d => { if (!seen.has(d.id)) { seen.add(d.id); out.push({ id: d.id, ...(d.data() as any) }); }});
-      if (out.length >= pageSize) return out;
-    } catch { /* si no existe el campo en docs viejos, seguimos */ }
+  // 1) search_name (minúsculas + sin tildes)  ✅
+  try {
+    const q0 = query(
+      this.col,
+      orderBy('search_name'),
+      startAt(lower),
+      endAt(lower + '\uf8ff'),
+      qlimit(pageSize)
+    );
+    const s0 = await getDocs(q0);
+    if (!s0.empty) return s0.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+  } catch { /* si aún no hay índice/campo, cae al siguiente */ }
 
-    // 1) prefijo por nameLower
-    try {
-      const s1 = await getDocs(query(
-        this.col, orderBy('nameLower'), startAt(sn), endAt(sn + '\uf8ff'), qlimit(pageSize)
-      ));
-      s1.forEach(d => { if (!seen.has(d.id)) { seen.add(d.id); out.push({ id: d.id, ...(d.data() as any) }); }});
-      if (out.length >= pageSize) return out;
-    } catch { /* puede pedir índice; si falla, continuamos */ }
+  // 2) nameLower (minúsculas)  ✅
+  try {
+    const q1 = query(
+      this.col,
+      orderBy('nameLower'),
+      startAt(lower),
+      endAt(lower + '\uf8ff'),
+      qlimit(pageSize)
+    );
+    const s1 = await getDocs(q1);
+    if (!s1.empty) return s1.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+  } catch {}
 
-    // 2) prefijo por handleLower
-    try {
-      const s2 = await getDocs(query(
-        this.col, orderBy('handleLower'), startAt(sn), endAt(sn + '\uf8ff'), qlimit(pageSize)
-      ));
-      s2.forEach(d => { if (!seen.has(d.id)) { seen.add(d.id); out.push({ id: d.id, ...(d.data() as any) }); }});
-      if (out.length >= pageSize) return out;
-    } catch {}
+  // 3) fallback legacy: name con capitalización aproximada
+  const cap = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+  const q2 = query(this.col, orderBy('name'), startAt(cap), endAt(cap + '\uf8ff'), qlimit(pageSize));
+  const s2 = await getDocs(q2);
+  return s2.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+}
 
-    // 3) fallback legacy (docs viejos): prefijo por name
-    const cap = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
-    const s3 = await getDocs(query(
-      this.col, orderBy('name'), startAt(cap), endAt(cap + '\uf8ff'), qlimit(pageSize)
-    ));
-    s3.forEach(d => { if (!seen.has(d.id)) { seen.add(d.id); out.push({ id: d.id, ...(d.data() as any) }); }});
-    return out.slice(0, pageSize);
-  }
+async searchByEmail(term: string, pageSize = 200) {
+  const lower = term.trim().toLowerCase();
 
-  // -------------------------------------------
-  // BÚSQUEDA POR EMAIL (tolerante)
-  // 0) igualdad por emailLower
-  // 1) prefijo por emailLower
-  // 2) fallback legacy: prefijo por email
-  // -------------------------------------------
-  async searchByEmail(term: string, pageSize = 200) {
-    const raw = term.trim();
-    const lower = raw.toLowerCase();
-    const out: any[] = [];
-    const seen = new Set<string>();
+  // 1) emailLower  ✅
+  try {
+    const q1 = query(
+      this.col,
+      orderBy('emailLower'),
+      startAt(lower),
+      endAt(lower + '\uf8ff'),
+      qlimit(pageSize)
+    );
+    const s1 = await getDocs(q1);
+    if (!s1.empty) return s1.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+  } catch {}
 
-    // 0) igualdad exacta por emailLower
-    try {
-      const s0 = await getDocs(query(this.col, where('emailLower', '==', lower), qlimit(pageSize)));
-      s0.forEach(d => { if (!seen.has(d.id)) { seen.add(d.id); out.push({ id: d.id, ...(d.data() as any) }); }});
-      if (out.length >= pageSize) return out;
-    } catch {}
-
-    // 1) prefijo por emailLower
-    try {
-      const s1 = await getDocs(query(
-        this.col, orderBy('emailLower'), startAt(lower), endAt(lower + '\uf8ff'), qlimit(pageSize)
-      ));
-      s1.forEach(d => { if (!seen.has(d.id)) { seen.add(d.id); out.push({ id: d.id, ...(d.data() as any) }); }});
-      if (out.length >= pageSize) return out;
-    } catch {}
-
-    // 2) fallback legacy: prefijo por email
-    const s2 = await getDocs(query(
-      this.col, orderBy('email'), startAt(lower), endAt(lower + '\uf8ff'), qlimit(pageSize)
-    ));
-    s2.forEach(d => { if (!seen.has(d.id)) { seen.add(d.id); out.push({ id: d.id, ...(d.data() as any) }); }});
-    return out.slice(0, pageSize);
-  }
+  // 2) fallback legacy: email tal cual (por si existía antes)
+  const q2 = query(this.col, orderBy('email'), startAt(lower), endAt(lower + '\uf8ff'), qlimit(pageSize));
+  const s2 = await getDocs(q2);
+  return s2.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+}
 
   // Atajo por modo
   async searchSmart(term: string, mode: 'name' | 'email' = 'name', pageSize = 200) {
